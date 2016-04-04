@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<svg version="1.1" viewBox="0.0 0.0 336.38057742782155 334.9501312335958" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <clipPath id="p.0"><path d="m0 0l336.38058 0l0 334.95013l-336.38058 0l0 -334.95013z" clip-rule="nonzero"></path></clipPath>
+<g clip-path="url(#p.0)">
+    <!-- Background -->
+    <path fill="#000000" fill-opacity="0.0" d="m0 0l336.38058 0l0 334.95013l-336.38058 0z" fill-rule="nonzero"></path>
+    <path fill="#f4cccc" d="m6.0026245 168.52493l0 0c0 -90.13113 72.91061 -163.19685 162.85039 -163.19685l0 0c43.190613 0 84.61224 17.193905 115.15263 47.79925c30.540375 30.605347 47.697754 72.115105 47.697754 115.3976l0 0c0 90.131134 -72.91058 163.19684 -162.85039 163.19684l0 0c-89.93978 0 -162.85039 -73.065704 -162.85039 -163.19684z" fill-rule="nonzero"></path>
+    <path stroke="#000000" stroke-width="4.0" stroke-linejoin="round" stroke-linecap="butt" d="m6.0026245 168.52493l0 0c0 -90.13113 72.91061 -163.19685 162.85039 -163.19685l0 0c43.190613 0 84.61224 17.193905 115.15263 47.79925c30.540375 30.605347 47.697754 72.115105 47.697754 115.3976l0 0c0 90.131134 -72.91058 163.19684 -162.85039 163.19684l0 0c-89.93978 0 -162.85039 -73.065704 -162.85039 -163.19684z" fill-rule="nonzero"></path>
+
+    <!-- hands -->
+    {hands}
+
+    <!-- Prochain streetcar -->
+    {legends}
+</g></svg>

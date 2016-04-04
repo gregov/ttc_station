@@ -1,0 +1,7 @@
+<?xml version="1.0" standalone="yes"?>
+<svg version="1.1" viewBox="0.0 0.0 100 130" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <circle cx="50" cy="50" r="48" stroke="black" stroke-width="2" fill="none" />
+    {vehicles_arcs}
+    {markers}
+</svg>
+

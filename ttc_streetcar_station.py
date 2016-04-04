@@ -1,130 +1,20 @@
 import os
-import requests
-import xmltodict
 import logging
-from flask import Flask, Response
-
-# API section
-AGENCY_TAG = 'ttc'
-FAVORITE_ROUTES = (510,)
-FAVORITE_STOPS = (15332, 15333)
+from flask import Flask, Response, send_from_directory
+from lib.nextbus import getPrediction, getRouteConfig
+from lib.svg_drawer import draw_groups
 
 
-class NextBusApi:
-    def __init__(self, base_url=None, agency='ttc'):
-        if base_url:
-            self.base_url = base_url
-        else:
-            self.base_url = 'http://webservices.nextbus.com/service/publicXMLFeed'
-        self.agency = agency
-
-    def call(self, method, **kwargs):
-        url_template = self.base_url + '?command={cmd}&a={agency_tag}&t=0'
-        url = url_template.format(cmd=method, agency_tag=self.agency)
-        for arg in kwargs:
-            if arg == 'route_id':
-                url += '&r={}'.format(kwargs['route_id'])
-            if arg == 'stop_id':
-                url += '&stopId={}'.format(kwargs['stop_id'])
-        logging.debug('Calling {}'.format(url))
-        response = requests.get(url)
-        return xmltodict.parse(response.text)
-
-my_api = NextBusApi(agency=AGENCY_TAG)
-
-
-def getRouteConfig(route_id):
-    return my_api.call('routeConfig', route_id=route_id)
-
-
-def getVehicles(route_id):
-    output = ""
-    result = my_api.call('vehicleLocations', route_id=route_id)
-    for vehicle in result['body']['vehicle']:
-        output += vehicle['@id'], vehicle['@lat'], vehicle['@lon'], vehicle['@heading']
-    return output
-
-
-def getPrediction(stop_id):
-    result = my_api.call('predictions', stop_id=stop_id)
+def next_vehicles(stop_id):
     res = {}
-    print result
-    for predictions in result['body']['predictions']:
-        if 'direction' in predictions:
-            if 'prediction' in predictions['direction']:
-                # accumulator by destination
-                temp = []
-                for next_vehicle in predictions['direction']['prediction']:
-                    temp.append(next_vehicle['@minutes'])
-                res[predictions['direction']['@title']] = temp
+    destinations = getPrediction(stop_id)
+    for idx, destination in enumerate(destinations):
+        res[destination] = []
+        for next_vehicle in destinations[destination]:
+            res[destination].append(next_vehicle)
 
+    logging.debug("Next vehicles: {}".format(res))
     return res
-
-
-def getMessages(route_id):
-    return my_api.call('messages', route_id=route_id)
-
-
-def getSchedule(route_id):
-    return my_api.call('schedule', route_id=route_id)
-
-
-def get_route(routes):
-    for route_id in routes:
-        print "Streetcar #{}".format(route_id)
-        print getRouteConfig(route_id)
-        print getVehicles(route_id)
-        print getMessages(vehicle_id)
-        print getSchedule(vehicle_id)
-
-
-# SVG Section
-
-def render(template_file, content, output_file=None):
-    with open(template_file, 'r') as f_template:
-        output = f_template.read().format(**content)
-        if output_file:
-            with open(output_file, 'w') as f_output:
-                f_output.write(output)
-        else:
-            return output
-
-
-def dynamic_svg(stop_id):
-        hands = []
-        hand_template = """<g class="linearc" transform="rotate({angle}, 467, 230)">
-                            <path stroke="{color}" stroke-width="4.0" stroke-linejoin="round" stroke-linecap="butt"
-                                  d="m467.2651 230.3622l-2.2389526 -143.18402" fill-rule="evenodd"></path>
-                            <path stroke="{color}" stroke-width="4.0" stroke-linecap="butt"
-                                  d="m471.63226 87.07487l-6.889923 -18.046867l-6.322296 18.253464z"
-                                  fill-rule="evenodd"></path>
-                           </g>"""
-
-        legend_template = """<text x="320" y="{legend_y}" style= "stroke: {color}; fill: #ffffff"
-                             font-family="Arial" font-size="12">{text}</text>"""
-
-        colors = ["#140000", "#CC0000"]
-        legends = ''
-        destinations = getPrediction(stop_id)
-        for idx, destination in enumerate(destinations):
-            text = "{}: {} min".format(destination, destinations[destination][0])
-            legend_y = int(290 + 14 * idx)
-            color = colors[idx]
-            legends += legend_template.format(text=text, legend_y=legend_y, color=color)
-
-            for next_vehicle in destinations[destination]:
-                angle = int(next_vehicle) * 6
-                print next_vehicle, angle
-                hands.append(hand_template.format(angle=angle, color=color))
-
-        data = {'stop_id': stop_id,
-                'legends': legends,
-                'hands': "\n".join(hands)
-                }
-
-        template_file = os.path.join(os.path.dirname(__file__) + 'next_streetcar.svg')
-        # output_file = os.path.join(os.path.dirname(__file__) + "next_{}.svg".format(stop_id))
-        return render(template_file, data)
 
 # Web corner
 app = Flask(__name__)
@@ -139,21 +29,69 @@ logging.basicConfig(level=10,
 
 @app.route('/')
 def index():
-    stops = []
-    for stop in FAVORITE_STOPS:
-        stops.append("""<img style="width:40%" src="/next_{}.svg"/>""".format(stop))
     return """<html>
                 <body>
-                    <h1> Next TTC streetcars</h1>
-                    {}
+
+                    <h1> <img style="width:100px" src="res/TTC.svg"/> Next TTC streetcars</h1>
+                    <h2>Steetcar routes</h2>
+                    <ul>
+                    <li><a href="/route/501"> 501 Queen</a>
+                    <li><a href="/route/502"> 502 Downtowner</a>
+                    <li><a href="/route/503"> 503 Kingston Rd</a>
+                    <li><a href="/route/504"> 504 King</a>
+                    <li><a href="/route/505"> 505 Dundas</a>
+                    <li><a href="/route/506"> 506 Carlton</a>
+                    <li><a href="/route/508"> 508 Lake Shore</a>
+                    <li><a href="/route/509"> 509 Harbourfront</a>
+                    <li><a href="/route/510"> 510 Spadina Accessible</a>
+                    <li><a href="/route/511"> 511 Bathurst</a>
+                    <li><a href="/route/512"> 512 St Clair</a>
+                    </ul>
+                    <h2>Night Streetcar Routes</h2>
+                    <ul>
+                    <li><a href="/route/301"> 301 Queen</a>
+                    <li><a href="/route/304"> 304 King</a>
+                    <li><a href="/route/306"> 306 Carlton</a>
+                    <li><a href="/route/317"> 317 Spadina
+                    </ul>
                 </body>
-              </html>""".format("\n".join(stops))
+              </html>"""
 
 
 @app.route('/next_<int:stop_id>.svg')
 def generate_svg(stop_id):
-    return Response(dynamic_svg(stop_id), mimetype="image/svg+xml")
+    return Response(draw_groups(next_vehicles(stop_id), ['red', 'blue', 'green']), mimetype="image/svg+xml")
 
+
+@app.route('/route/<int:route_id>')
+def get_route_config(route_id):
+    route = getRouteConfig(route_id)
+    stops = []
+    for stop in route['stops']:
+        stops.append("""Stop #{id}: <a href="/stop/{id}">{name}</a>""".format(id=stop['id'], name=stop['name']))
+
+    return """<html>
+                <body>
+                    <h1> All Stops for route {}</h1>
+                    {}
+                </body>
+              </html>""".format(route['name'], '<br />'.join(stops))
+
+
+@app.route('/stop/<int:stop_id>')
+def get_stop(stop_id):
+    return """<html>
+                <head><meta http-equiv="refresh" content="15    "></head>
+                <body>
+                    <h1> Next TTC streetcars for stop {stop_id}</h1>
+                    <img style="width:40%" src="/next_{stop_id}.svg"/>
+                </body>
+              </html>""".format(stop_id=stop_id)
+
+
+@app.route('/res/<path:path>')
+def send_ressource(path):
+    return send_from_directory('res', path)
 
 if __name__ == '__main__':
     app.run()

@@ -2,7 +2,7 @@
 TTC streetcar station dial, using Flask, NextBus Api and basic SVG
 
 Requires:
-    sudo pip install xmltodict flask
+    sudo pip install xmltodict flask colour
 
 Usage:
 $python ttc_streetcar_station.py
